@@ -190,6 +190,24 @@ void FrameHessian::makeImages(float* color, CalibHessian* HCalib)
 	}
 }
 
+void FrameHessian::addDepth(float* depthMap)
+{
+
+	for (int i = 0; i < pyrLevelsUsed; i++)
+	{
+		dIpDepth[i] = new Eigen::Vector3f[wG[i] * hG[i]];
+	}
+	dDepth = dIpDepth[0];
+
+
+	// make d0
+	int w = wG[0];
+	int h = hG[0];
+	for (int i = 0; i < w * h; i++)
+		dDepth[i][0] = depthMap[i];
+	
+}
+
 void FrameFramePrecalc::set(FrameHessian* host, FrameHessian* target, CalibHessian* HCalib )
 {
 	this->host = host;

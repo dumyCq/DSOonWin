@@ -51,11 +51,18 @@ PangolinDSOViewer::PangolinDSOViewer(int w, int h, bool startRunThread)
 		internalVideoImg = new MinimalImageB3(w,h);
 		internalKFImg = new MinimalImageB3(w,h);
 		internalResImg = new MinimalImageB3(w,h);
-		videoImgChanged=kfImgChanged=resImgChanged=true;
+
+		//@qxc62 add depth images
+		internalDepthMapImg = new MinimalImageB3(w, h);
+
+		videoImgChanged=kfImgChanged=resImgChanged=depthmapImgChanged=true;
 
 		internalVideoImg->setBlack();
 		internalKFImg->setBlack();
 		internalResImg->setBlack();
+
+		//@qxc62 add depth images
+		internalDepthMapImg->setBlack();
 	}
 
 
@@ -76,6 +83,11 @@ PangolinDSOViewer::~PangolinDSOViewer()
 {
 	close();
 	runThread.join();
+}
+
+void PangolinDSOViewer::hasPredictDepthMap()
+{
+	setting_render_displayDepthMap = true;
 }
 
 
@@ -109,16 +121,23 @@ void PangolinDSOViewer::run()
 	pangolin::View& d_residual = pangolin::Display("imgResidual")
 	    .SetAspect(w/(float)h);
 
+	//@qxc62 add depth images
+	pangolin::View& d_depthmap = pangolin::Display("imgDepthMap")
+		.SetAspect(w / (float)h);
+
 	pangolin::GlTexture texKFDepth(w,h,GL_RGB,false,0,GL_RGB,GL_UNSIGNED_BYTE);
 	pangolin::GlTexture texVideo(w,h,GL_RGB,false,0,GL_RGB,GL_UNSIGNED_BYTE);
 	pangolin::GlTexture texResidual(w,h,GL_RGB,false,0,GL_RGB,GL_UNSIGNED_BYTE);
 
+	//@qxc62 add depth images
+	pangolin::GlTexture texDepthMap(w, h, GL_RGB, false, 0, GL_RGB, GL_UNSIGNED_BYTE);
 
     pangolin::CreateDisplay()
 		  .SetBounds(0.0, 0.3, pangolin::Attach::Pix(UI_WIDTH), 1.0)
 		  .SetLayout(pangolin::LayoutEqual)
 		  .AddDisplay(d_kfDepth)
 		  .AddDisplay(d_video)
+	      .AddDisplay(d_depthmap) //@qxc62 add depth images
 		  .AddDisplay(d_residual);
 
 	// parameter reconfigure gui
@@ -138,6 +157,7 @@ void PangolinDSOViewer::run()
 	pangolin::Var<bool> settings_showLiveDepth("ui.showDepth",true,true);
 	pangolin::Var<bool> settings_showLiveVideo("ui.showVideo",true,true);
     pangolin::Var<bool> settings_showLiveResidual("ui.showResidual",false,true);
+
 
 	pangolin::Var<bool> settings_showFramesWindow("ui.showFramesWindow",false,true);
 	pangolin::Var<bool> settings_showFullTracking("ui.showFullTracking",false,true);
@@ -197,7 +217,13 @@ void PangolinDSOViewer::run()
 		if(videoImgChanged) 	texVideo.Upload(internalVideoImg->data,GL_BGR,GL_UNSIGNED_BYTE);
 		if(kfImgChanged) 		texKFDepth.Upload(internalKFImg->data,GL_BGR,GL_UNSIGNED_BYTE);
 		if(resImgChanged) 		texResidual.Upload(internalResImg->data,GL_BGR,GL_UNSIGNED_BYTE);
-		videoImgChanged=kfImgChanged=resImgChanged=false;
+		//@qxc62 add depth images
+		//depth images change associate with videoImgChanged
+		if(setting_render_displayDepthMap)
+		{
+			if (depthmapImgChanged) 	texDepthMap.Upload(internalDepthMapImg->data, GL_BGR, GL_UNSIGNED_BYTE);
+		}
+		videoImgChanged=kfImgChanged=resImgChanged=depthmapImgChanged=false;
 		openImagesMutex.unlock();
 
 
@@ -239,6 +265,13 @@ void PangolinDSOViewer::run()
 			d_residual.Activate();
 			glColor4f(1.0f,1.0f,1.0f,1.0f);
 			texResidual.RenderToViewportFlipY();
+		}
+
+		if (setting_render_displayDepthMap)
+		{
+			d_depthmap.Activate();
+			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+			texDepthMap.RenderToViewportFlipY();
 		}
 
 
@@ -292,6 +325,9 @@ void PangolinDSOViewer::run()
 	printf("QUIT Pangolin thread!\n");
 	printf("I'll just kill the whole process.\nSo Long, and Thanks for All the Fish!\n");
 
+	//@qxc62 add a stop before quit
+	std::cin.get();
+
 	exit(1);
 }
 
@@ -327,7 +363,11 @@ void PangolinDSOViewer::reset_internal()
 	internalVideoImg->setBlack();
 	internalKFImg->setBlack();
 	internalResImg->setBlack();
-	videoImgChanged= kfImgChanged= resImgChanged=true;
+	videoImgChanged= kfImgChanged= resImgChanged= depthmapImgChanged=true;
+
+	//@qxc62 add depth images
+	internalDepthMapImg->setBlack();
+
 	openImagesMutex.unlock();
 
 	needReset = false;
@@ -516,7 +556,23 @@ void PangolinDSOViewer::pushLiveFrame(FrameHessian* image)
 		internalVideoImg->data[i][2] =
 			image->dI[i][0]*0.8 > 255.0f ? 255.0 : image->dI[i][0]*0.8;
 
-	videoImgChanged=true;
+	videoImgChanged = true;
+}
+
+void PangolinDSOViewer::pushDepthMap(FrameHessian* image)
+{
+	if (!setting_render_displayDepthMap) return;
+	if (disableAllDisplay) return;
+
+	boost::unique_lock<boost::mutex> lk(openImagesMutex);
+
+	for (int i = 0; i < w * h; i++)
+		internalDepthMapImg->data[i][0] =
+		internalDepthMapImg->data[i][1] =
+		internalDepthMapImg->data[i][2] =
+			image->dDepth[i][0] * 0.8 > 255.0f ? 255.0 : image->dDepth[i][0] * 0.8;
+
+	depthmapImgChanged = true;
 }
 
 bool PangolinDSOViewer::needPushDepthImage()

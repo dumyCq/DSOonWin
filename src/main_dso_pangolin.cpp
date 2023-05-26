@@ -58,6 +58,11 @@ std::string vignette = "";
 std::string gammaCalib = "";
 std::string source = "";
 std::string calib = "";
+
+//@qxc62 add depth images
+std::string depthSource = "";
+bool useDepth = false;
+
 double rescale = 1;
 bool reverse = false;
 bool disableROS = false;
@@ -79,6 +84,10 @@ using namespace dso;
 void my_exit_handler(int s)
 {
 	printf("Caught signal %d\n",s);
+
+	//@qxc62 add a stop before quit
+	std::cin.get();
+
 	exit(1);
 }
 
@@ -148,9 +157,6 @@ void settingsDefault(int preset)
 
 	printf("==============================================\n");
 }
-
-
-
 
 
 
@@ -351,6 +357,15 @@ void parseArgument(char* arg)
 		return;
 	}
 
+	//@qxc62 add depth images
+	if (1 == sscanf(arg, "depth=%s", buf))
+	{
+		depthSource = buf;
+		printf("loading depth maps from %s!\n", depthSource.c_str());
+		useDepth = true;
+		return;
+	}
+
 	printf("could not parse argument \"%s\"!!!!\n", arg);
 }
 
@@ -366,7 +381,7 @@ int main( int argc, char** argv )
 	boost::thread exThread = boost::thread(exitThread);
 
 
-	ImageFolderReader* reader = new ImageFolderReader(source,calib, gammaCalib, vignette);
+	ImageFolderReader* reader = new ImageFolderReader(source,depthSource,calib, gammaCalib, vignette);
 	reader->setGlobalCalibration();
 
 
@@ -374,6 +389,10 @@ int main( int argc, char** argv )
 	if(setting_photometricCalibration > 0 && reader->getPhotometricGamma() == 0)
 	{
 		printf("ERROR: dont't have photometric calibation. Need to use commandline options mode=1 or mode=2 ");
+
+		//@qxc62 add a stop before quit
+		std::cin.get();
+
 		exit(1);
 	}
 
@@ -398,9 +417,6 @@ int main( int argc, char** argv )
 	FullSystem* fullSystem = new FullSystem();
 	fullSystem->setGammaFunction(reader->getPhotometricGamma());
 	fullSystem->linearizeOperation = (playbackSpeed==0);
-
-
-
 
 
 
@@ -570,7 +586,12 @@ int main( int argc, char** argv )
 
 
     if(viewer != 0)
-        viewer->run();
+    {
+		if (useDepth)
+			viewer->hasPredictDepthMap();
+		viewer->run();
+    }
+        
 
     runthread.join();
 

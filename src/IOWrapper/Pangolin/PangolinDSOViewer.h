@@ -67,6 +67,7 @@ public:
 
 	void run();
 	void close();
+	void hasPredictDepthMap();
 
 	void addImageToDisplay(std::string name, MinimalImageB3* image);
 	void clearAllImagesToDisplay();
@@ -81,6 +82,9 @@ public:
 	virtual void pushLiveFrame(FrameHessian* image);
 	virtual void pushDepthImage(MinimalImageB3* image);
     virtual bool needPushDepthImage();
+
+	//@qxc62 add depth image
+	virtual void pushDepthMap(FrameHessian* image);
 
 	virtual void join();
 
@@ -104,7 +108,9 @@ private:
 	MinimalImageB3* internalResImg;
 	bool videoImgChanged, kfImgChanged, resImgChanged;
 
-
+	//@qxc62 add depth images
+	MinimalImageB3* internalDepthMapImg;
+	bool depthmapImgChanged;
 
 	// 3D model rendering
 	boost::mutex model3DMutex;

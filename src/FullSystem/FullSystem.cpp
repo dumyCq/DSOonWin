@@ -278,7 +278,13 @@ Vec4 FullSystem::trackNewCoarse(FrameHessian* fh)
 	// set pose initialization.
 
     for(IOWrap::Output3DWrapper* ow : outputWrapper)
-        ow->pushLiveFrame(fh);
+	{
+		ow->pushLiveFrame(fh);
+
+		//@qxc62 add depth images
+		if (fh->hasDepth)
+			ow->pushDepthMap(fh);
+	}
 
 
 
@@ -825,8 +831,16 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 	fh->ab_exposure = image->exposure_time;
     fh->makeImages(image->image, &Hcalib);
 
+	//@qxc62 add depth images
+	if(image->hasDepth)
+	{
+		fh->addDepth(image->depth);
+		fh->hasDepth = true;
+	}
 
-
+	// @qxc62 debug info
+	std::cout << "current processing frame is: " << id << std::endl;
+	std::cout << "check if initialized: " << initialized << std::endl;
 
 	if(!initialized)
 	{

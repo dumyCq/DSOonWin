@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C7338EBA-1F8F-4014-9B91-6BCF47A2F03B}</ProjectGuid>
     <RootNamespace>DSOonWin</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -109,7 +109,8 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DSO_ON_WIN;HAS_ZIPLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(ProjectDir)external\Pangolin\lib\Debug\pangolin.lib;$(ProjectDir)external\Sophus\lib\Debug\Sophus.lib;$(ProjectDir)external\OpenCV\built\x64\vc14\lib\opencv_world320d.lib;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.14393.0\um\x64\OpenGL32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)external\Pangolin\lib\Debug\pangolin.lib;$(ProjectDir)external\Sophus\lib\Debug\Sophus.lib;$(ProjectDir)external\OpenCV\built\x64\vc14\lib\opencv_world320d.lib;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\um\x64\OpenGL32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Windows Kits\10\Lib\10.0.19041.0\um\x64\OpenGL32.Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)external\OpenCV\built\x64\vc14\bin\opencv_world320d.dll" "$(OutputPath)"</Command>
@@ -130,7 +131,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(ProjectDir)external\Pangolin\lib\Release\pangolin.lib;$(ProjectDir)external\Sophus\lib\Release\Sophus.lib;$(ProjectDir)external\OpenCV\built\x64\vc14\lib\opencv_world320.lib;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.14393.0\um\x64\OpenGL32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)external\Pangolin\lib\Release\pangolin.lib;$(ProjectDir)external\Sophus\lib\Release\Sophus.lib;$(ProjectDir)external\OpenCV\built\x64\vc14\lib\opencv_world320.lib;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.19041.0\um\x64\OpenGL32.Lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(ProjectDir)external\OpenCV\built\x64\vc14\bin\opencv_world320.dll" "$(OutputPath)"</Command>

@@ -189,7 +189,8 @@ public:
         virtual void pushDepthImage(MinimalImageB3* image) {}
         virtual bool needPushDepthImage() {return false;}
 
-
+        //@qxc62 add depth images
+        virtual void pushDepthMap(FrameHessian* image){}
 
         /* Usage:
          * called once after a new keyframe is created, with the forward-warped inverse depthmap for that keyframe.

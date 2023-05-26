@@ -170,6 +170,9 @@ extern bool setting_render_displayResidual;
 extern bool setting_render_displayVideo;
 extern bool setting_render_displayDepth;
 
+	//@qxc62 add depth images
+extern bool setting_render_displayDepthMap;
+
 extern bool setting_fullResetRequested;
 
 extern bool setting_debugout_runquiet;

@@ -366,7 +366,9 @@ Undistort* Undistort::getUndistorterForFile(std::string configFilename, std::str
     else
     {
         printf("could not read calib file! exit.");
-        exit(1);
+		//@qxc62 add a stop before quit
+		std::cin.get();
+    	exit(1);
     }
 
 	u->loadPhotometricCalibration(
@@ -388,6 +390,8 @@ ImageAndExposure* Undistort::undistort(const MinimalImage<T>* image_raw, float e
 	if(image_raw->w != wOrg || image_raw->h != hOrg)
 	{
 		printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, w, h);
+		//@qxc62 add a stop before quit
+		std::cin.get();
 		exit(1);
 	}
 
@@ -696,6 +700,8 @@ void Undistort::makeOptimalK_crop()
 		if(iteration > 500)
 		{
 			printf("FAILED TO COMPUTE GOOD CAMERA MATRIX - SOMETHING IS SERIOUSLY WRONG. ABORTING \n");
+			//@qxc62 add a stop before quit
+			std::cin.get();
 			exit(1);
 		}
 	}
@@ -873,6 +879,8 @@ void Undistort::readFromFile(const char* configFileName, int nPars, std::string 
 		if(w != wOrg || h != hOrg)
 		{
 			printf("ERROR: rectification mode none requires input and output dimenstions to match!\n\n");
+			//@qxc62 add a stop before quit
+			std::cin.get();
 			exit(1);
 		}
 		K.setIdentity();

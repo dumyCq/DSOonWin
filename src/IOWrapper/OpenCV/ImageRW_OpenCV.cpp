@@ -22,6 +22,7 @@
 */
 
 
+#include <iostream>
 
 #include "IOWrapper/ImageRW.h"
 #include <opencv2/highgui/highgui.hpp>
@@ -88,6 +89,8 @@ MinimalImage<unsigned short>* readImageBW_16U(std::string filename)
 
 MinimalImageB* readStreamBW_8U(char* data, int numBytes)
 {
+	//@qxc62 debug info
+	//std::cout << numBytes << std::endl;
 	cv::Mat m = cv::imdecode(cv::Mat(numBytes,1,CV_8U, data), CV_LOAD_IMAGE_GRAYSCALE);
 	if(m.rows*m.cols==0)
 	{

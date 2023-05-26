@@ -80,7 +80,14 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 	newFrame = newFrameHessian;
 
     for(IOWrap::Output3DWrapper* ow : wraps)
-        ow->pushLiveFrame(newFrameHessian);
+    {
+		ow->pushLiveFrame(newFrameHessian);
+
+		//@qxc62 add depth images
+		if (newFrameHessian->hasDepth)
+			ow->pushDepthMap(newFrameHessian);
+    }
+        
 
 	int maxIterations[] = {5,5,10,30,50};
 

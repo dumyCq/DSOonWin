@@ -120,7 +120,10 @@ struct FrameHessian
 	Eigen::Vector3f* dIp[PYR_LEVELS];	 // coarse tracking / coarse initializer. NAN in [0] only.
 	float* absSquaredGrad[PYR_LEVELS];  // only used for pixel select (histograms etc.). no NAN.
 
-
+	//@qxc62 add depth images
+	Eigen::Vector3f* dDepth;
+	bool hasDepth = false;
+	Eigen::Vector3f* dIpDepth[PYR_LEVELS];	 // coarse tracking / coarse initializer. NAN in [0] only.
 
 
 
@@ -258,6 +261,7 @@ struct FrameHessian
 
 
     void makeImages(float* color, CalibHessian* HCalib);
+	void addDepth(float* depthMap);
 
 	inline Vec10 getPrior()
 	{

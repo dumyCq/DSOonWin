@@ -135,20 +135,25 @@ struct PrepImageItem
 class ImageFolderReader
 {
 public:
-	ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile)
+	ImageFolderReader(std::string path, std::string depth_path, std::string calibFile, std::string gammaFile, std::string vignetteFile)
 	{
 		this->path = path;
 		this->calibfile = calibFile;
 
+		//@qxc62 add depth images
+		this->depth_path = depth_path;
+		this->hasDepth = false;
+
 #if HAS_ZIPLIB
 		ziparchive=0;
 		databuffer=0;
+		databufferDepth=0;
 #endif
 
 		isZipped = (path.length()>4 && path.substr(path.length()-4) == ".zip");
 
-
-
+		//@qxc62 add depth images
+		isDepthZipped = (depth_path.length() > 4 && depth_path.substr(depth_path.length() - 4) == ".zip");
 
 
 		if(isZipped)
@@ -159,29 +164,103 @@ public:
 			if(ziperror!=0)
 			{
 				printf("ERROR %d reading archive %s!\n", ziperror, path.c_str());
+				//@qxc62 add a stop before quit
+				std::cin.get();
 				exit(1);
 			}
 
 			files.clear();
 			int numEntries = zip_get_num_entries(ziparchive, 0);
+			int record_numEntries = numEntries;
 			for(int k=0;k<numEntries;k++)
 			{
 				const char* name = zip_get_name(ziparchive, k,  ZIP_FL_ENC_STRICT);
 				std::string nstr = std::string(name);
 				if(nstr == "." || nstr == "..") continue;
-				files.push_back(name);
+				if (nstr.back() == '/')
+				{
+					record_numEntries--;
+				}
+				else
+				{
+					files.push_back(name);
+				}
+				//@qxc62 debug info
+				//std::cout << name << std::endl;
 			}
 
-			printf("got %d entries and %d files!\n", numEntries, (int)files.size());
+			printf("got %d entries and %d files!\n", record_numEntries, (int)files.size());
 			std::sort(files.begin(), files.end());
 #else
 			printf("ERROR: cannot read .zip archive, as compile without ziplib!\n");
+			//@qxc62 add a stop before quit
+			std::cin.get();
 			exit(1);
 #endif
 		}
 		else
 			getdir (path, files);
 
+		//@qxc62 add depth images
+		if (isDepthZipped)
+		{
+#if HAS_ZIPLIB
+			int ziperror = 0;
+			ziparchiveDepth = zip_open(depth_path.c_str(), ZIP_RDONLY, &ziperror);
+			if (ziperror != 0)
+			{
+				printf("ERROR %d reading archive %s!\n", ziperror, depth_path.c_str());
+				//@qxc62 add a stop before quit
+				std::cin.get();
+				exit(1);
+			}
+
+			depth_files.clear();
+			int numEntries = zip_get_num_entries(ziparchiveDepth, 0);
+			int record_numEntries = numEntries;
+			for (int k = 0; k < numEntries; k++)
+			{
+				const char* name = zip_get_name(ziparchiveDepth, k, ZIP_FL_ENC_STRICT);
+				std::string nstr = std::string(name);
+				if (nstr == "." || nstr == "..") continue;
+				if (nstr.back() == '/')
+				{
+					record_numEntries--;
+				}
+				else
+				{
+					depth_files.push_back(name);
+				}
+				
+				//@qxc62 debug info
+				//std::cout << name << std::endl;
+			}
+
+			printf("got %d entries and %d files!\n", record_numEntries, (int)depth_files.size());
+			std::sort(depth_files.begin(), depth_files.end());
+#else
+			printf("ERROR: cannot read .zip archive, as compile without ziplib!\n");
+			//@qxc62 add a stop before quit
+			std::cin.get();
+			exit(1);
+#endif
+		}
+		else
+			getdir(depth_path, depth_files);
+
+		//@qxc62 add depth images
+		if(depth_files.size()>0)
+		{
+			if (files.size() != depth_files.size())
+			{
+				printf("ERROR: the number of depth map is %d , not match the number of images %d!\n", (int)depth_files.size(), (int)files.size());
+				//@qxc62 add a stop before quit
+				std::cin.get();
+				exit(1);
+			}
+			else
+				hasDepth = true;
+		}
 
 		undistort = Undistort::getUndistorterForFile(calibFile, gammaFile, vignetteFile);
 
@@ -194,7 +273,11 @@ public:
 
 		// load timestamps if possible.
 		loadTimestamps();
-		printf("ImageFolderReader: got %d files in %s!\n", (int)files.size(), path.c_str());
+		printf("ImageFolderReader: got %d images in %s!\n", (int)files.size(), path.c_str());
+
+		//@qxc62 add depth images
+		if(hasDepth)
+			printf("ImageFolderReader: got %d image depth maps in %s!\n", (int)depth_files.size(), depth_path.c_str());
 
 	}
 	~ImageFolderReader()
@@ -202,6 +285,9 @@ public:
 #if HAS_ZIPLIB
 		if(ziparchive!=0) zip_close(ziparchive);
 		if(databuffer!=0) delete databuffer;
+		//@qxc62 add depth images
+		if (ziparchiveDepth != 0) zip_close(ziparchiveDepth);
+		if (databufferDepth != 0) delete databufferDepth;
 #endif
 
 
@@ -289,6 +375,9 @@ private:
 			zip_file_t* fle = zip_fopen(ziparchive, files[id].c_str(), 0);
 			long readbytes = zip_fread(fle, databuffer, (long)widthOrg*heightOrg*6+10000);
 
+			//@qxc62 debug info
+			//std::cout << files[id].c_str() << std::endl;
+
 			if(readbytes > (long)widthOrg*heightOrg*6)
 			{
 				printf("read %ld/%ld bytes for file %s. increase buffer!!\n", readbytes,(long)widthOrg*heightOrg*6+10000, files[id].c_str());
@@ -300,6 +389,8 @@ private:
 				if(readbytes > (long)widthOrg*heightOrg*30)
 				{
 					printf("buffer still to small (read %ld/%ld). abort.\n", readbytes,(long)widthOrg*heightOrg*30+10000);
+					//@qxc62 add a stop before quit
+					std::cin.get();
 					exit(1);
 				}
 			}
@@ -307,6 +398,52 @@ private:
 			return IOWrap::readStreamBW_8U(databuffer, readbytes);
 #else
 			printf("ERROR: cannot read .zip archive, as compile without ziplib!\n");
+			//@qxc62 add a stop before quit
+			std::cin.get();
+			exit(1);
+#endif
+		}
+	}
+
+	MinimalImageB* getDepth_internal(int id, int unused)
+	{
+		if (!isDepthZipped)
+		{
+			// CHANGE FOR ZIP FILE
+			return IOWrap::readImageBW_8U(depth_files[id]);
+		}
+		else
+		{
+#if HAS_ZIPLIB
+			if (databufferDepth == 0) databufferDepth = new char[widthOrg * heightOrg * 6 + 10000];
+			zip_file_t* fle = zip_fopen(ziparchiveDepth, depth_files[id].c_str(), 0);
+			long readbytes = zip_fread(fle, databufferDepth, (long)widthOrg * heightOrg * 6 + 10000);
+
+			//@qxc62 debug info
+			//std::cout << depth_files[id].c_str() << std::endl;
+
+			if (readbytes > (long)widthOrg * heightOrg * 6)
+			{
+				printf("read %ld/%ld bytes for file %s. increase buffer!!\n", readbytes, (long)widthOrg * heightOrg * 6 + 10000, depth_files[id].c_str());
+				delete[] databufferDepth;
+				databufferDepth = new char[(long)widthOrg * heightOrg * 30];
+				fle = zip_fopen(ziparchiveDepth, files[id].c_str(), 0);
+				readbytes = zip_fread(fle, databufferDepth, (long)widthOrg * heightOrg * 30 + 10000);
+
+				if (readbytes > (long)widthOrg * heightOrg * 30)
+				{
+					printf("buffer still to small (read %ld/%ld). abort.\n", readbytes, (long)widthOrg * heightOrg * 30 + 10000);
+					//@qxc62 add a stop before quit
+					std::cin.get();
+					exit(1);
+				}
+			}
+
+			return IOWrap::readStreamBW_8U(databufferDepth, readbytes);
+#else
+			printf("ERROR: cannot read .zip archive, as compile without ziplib!\n");
+			//@qxc62 add a stop before quit
+			std::cin.get();
 			exit(1);
 #endif
 		}
@@ -320,6 +457,19 @@ private:
 				minimg,
 				(exposures.size() == 0 ? 1.0f : exposures[id]),
 				(timestamps.size() == 0 ? 0.0 : timestamps[id]));
+
+		//@qxc62 add depth images
+		if(hasDepth)
+		{
+			MinimalImageB* minimgDepth = getDepth_internal(id, 0);
+			ImageAndExposure* retDepth = undistort->undistort<unsigned char>(
+				minimgDepth,
+				(exposures.size() == 0 ? 1.0f : exposures[id]),
+				(timestamps.size() == 0 ? 0.0 : timestamps[id]));
+			memcpy(ret2->depth, retDepth->image, retDepth->w * retDepth->h * sizeof(float));
+			ret2->hasDepth = true;
+		}
+
 		delete minimg;
 		return ret2;
 	}
@@ -393,6 +543,9 @@ private:
 
 	std::vector<ImageAndExposure*> preloadedImages;
 	std::vector<std::string> files;
+
+	//@qxc62 add depth images
+	std::vector<std::string> depth_files;
 	std::vector<double> timestamps;
 	std::vector<float> exposures;
 
@@ -402,11 +555,22 @@ private:
 	std::string path;
 	std::string calibfile;
 
+	//@qxc62 add depth images
+	std::string depth_path;
+	bool hasDepth;
+
 	bool isZipped;
+
+	//@qxc62 add depth images
+	bool isDepthZipped;
 
 #if HAS_ZIPLIB
 	zip_t* ziparchive;
 	char* databuffer;
+
+	//@qxc62 add depth images
+	zip_t* ziparchiveDepth;
+	char* databufferDepth;
 #endif
 };
 

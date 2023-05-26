@@ -205,6 +205,9 @@ bool setting_render_displayResidual = true;
 bool setting_render_displayVideo = true;
 bool setting_render_displayDepth = true;
 
+	//@qxc62 add depth images
+bool setting_render_displayDepthMap = false;
+
 bool setting_fullResetRequested = false;
 
 bool setting_debugout_runquiet = false;
