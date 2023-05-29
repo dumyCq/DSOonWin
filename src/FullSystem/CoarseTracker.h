@@ -54,6 +54,12 @@ public:
 			int coarsestLvl, Vec5 minResForAbort,
 			IOWrap::Output3DWrapper* wrap=0);
 
+	//@qxc62 use predicted depth map to set iDepth
+	void setCTRefForFirstFrame(
+		std::vector<FrameHessian*> frameHessians);
+
+	void makeCoarseDepthForFirstFrame(FrameHessian* fh);
+
 	void setCoarseTrackingRef(
 			std::vector<FrameHessian*> frameHessians);
 

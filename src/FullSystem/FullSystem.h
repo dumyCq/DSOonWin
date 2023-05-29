@@ -186,6 +186,8 @@ private:
 	void initializeFromInitializer(FrameHessian* newFrame);
 	void flagFramesForMarginalization(FrameHessian* newFH);
 
+	//@qxc62 use predicted depth map to set iDepth
+	void initializeFromInitializerCNN(FrameHessian* newFrame);
 
 	void removeOutliers();
 

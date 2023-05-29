@@ -780,6 +780,7 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
 	bool* statusMapB = new bool[w[0]*h[0]];
 
 	float densities[] = {0.03,0.05,0.15,0.5,1};
+
 	for(int lvl=0; lvl<pyrLevelsUsed; lvl++)
 	{
 		sel.currentPotential = 3;
@@ -794,21 +795,29 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
 		if(points[lvl] != 0) delete[] points[lvl];
 		points[lvl] = new Pnt[npts];
 
-		// set idepth map to initially 1 everywhere.
+		//@qxc62 use predicted depth map to set iDepth
+		float* depthmap_ptr = newFrameHessian->dDepth->data();
+
+		//@qxc62 transfer the depth value from 0-255 to real depth in (mm?)
+		for (int i = 0; i < w[0] * h[0]; ++i) {
+			depthmap_ptr[i] = (depthmap_ptr[i] / 255) * 17.95 * 5.625 + 0.0001;
+		}
+		// set idepth map by static stereo matching. if no idepth is available, set 0.01.
 		int wl = w[lvl], hl = h[lvl];
+
 		Pnt* pl = points[lvl];
 		int nl = 0;
 		for(int y=patternPadding+1;y<hl-patternPadding-2;y++)
 		for(int x=patternPadding+1;x<wl-patternPadding-2;x++)
 		{
 			//if(x==2) printf("y=%d!\n",y);
-			if((lvl!=0 && statusMapB[x+y*wl]) || (lvl==0 && statusMap[x+y*wl] != 0))
+			if(lvl==0 && statusMap[x+y*wl] != 0)
 			{
 				//assert(patternNum==9);
 				pl[nl].u = x+0.1;
 				pl[nl].v = y+0.1;
-				pl[nl].idepth = 1;
-				pl[nl].iR = 1;
+				pl[nl].idepth = 1.0f / (*(depthmap_ptr + (x + y * wl)));
+				pl[nl].iR = 1.0f / (*(depthmap_ptr + (x + y * wl)));
 				pl[nl].isGood=true;
 				pl[nl].energy.setZero();
 				pl[nl].lastHessian=0;
@@ -830,6 +839,41 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
 //
 
 				pl[nl].outlierTH = patternNum*setting_outlierTH;
+
+
+
+				nl++;
+				assert(nl <= npts);
+			}
+
+			if (lvl != 0 && statusMapB[x + y * wl])
+			{
+				//assert(patternNum==9);
+				pl[nl].u = x + 0.1;
+				pl[nl].v = y + 0.1;
+				pl[nl].idepth = 0.1;
+				pl[nl].iR = 0.1;
+				pl[nl].isGood = true;
+				pl[nl].energy.setZero();
+				pl[nl].lastHessian = 0;
+				pl[nl].lastHessian_new = 0;
+				pl[nl].my_type = (lvl != 0) ? 1 : statusMap[x + y * wl];
+
+				Eigen::Vector3f* cpt = firstFrame->dIp[lvl] + x + y * w[lvl];
+				float sumGrad2 = 0;
+				for (int idx = 0; idx < patternNum; idx++)
+				{
+					int dx = patternP[idx][0];
+					int dy = patternP[idx][1];
+					float absgrad = cpt[dx + dy * w[lvl]].tail<2>().squaredNorm();
+					sumGrad2 += absgrad;
+				}
+
+				//				float gth = setting_outlierTH * (sqrtf(sumGrad2)+setting_outlierTHSumComponent);
+				//				pl[nl].outlierTH = patternNum*gth*gth;
+				//
+
+				pl[nl].outlierTH = patternNum * setting_outlierTH;
 
 
 
