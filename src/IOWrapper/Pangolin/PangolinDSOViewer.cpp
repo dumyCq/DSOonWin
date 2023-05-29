@@ -540,6 +540,21 @@ void PangolinDSOViewer::publishCamPose(FrameShell* frame,
 
 	currentCam->setFromF(frame, HCalib);
 	allFramePoses.push_back(frame->camToWorld.translation().cast<float>());
+
+	//@qxc62 debug info
+	//std::cout << "the estimated camera position in real world is: " << std::endl;
+	//// Suppose camToWorld is your SE3 object
+	//Eigen::Matrix4f transformation = Eigen::Matrix4f::Identity();
+	//// Get rotation matrix
+	//Eigen::Matrix3f rotation = frame->camToWorld.rotationMatrix().cast<float>();
+	//// Get translation vector
+	//Eigen::Vector3f translation = frame->camToWorld.translation().cast<float>();
+	//// Set the rotation
+	//transformation.block<3, 3>(0, 0) = rotation;
+	//// Set the translation
+	//transformation.block<3, 1>(0, 3) = translation;
+	//// Now you can print the transformation matrix
+	//std::cout << transformation << std::endl;
 }
 
 

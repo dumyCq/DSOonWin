@@ -155,6 +155,28 @@ void settingsDefault(int preset)
 		setting_logStuff = false;
 	}
 
+	//@qxc62 add more option to experiment of settings
+	if (preset == 7)
+	{
+		printf("DEFAULT settings:\n"
+			"- %s real-time enforcing\n"
+			"- 4000 active points\n"
+			"- 1-3 active frames\n"
+			"- 1-6 LM iteration each KF\n"
+			"- original image resolution\n", preset == 0 ? "no " : "1x");
+
+		playbackSpeed = (preset == 0 ? 0 : 1);
+		preload = preset == 1;
+		setting_desiredImmatureDensity = 3000;
+		setting_desiredPointDensity = 4000;
+		setting_minFrames = 1;
+		setting_maxFrames = 3;
+		setting_maxOptIterations = 6;
+		setting_minOptIterations = 1;
+
+		setting_logStuff = false;
+	}
+
 	printf("==============================================\n");
 }
 

@@ -915,22 +915,21 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
 			coarseInitializer->setFirst(&Hcalib, fh);
 
 			//@qxc62 add here for true since CNN-DSO need it
-			initialized = true;
+			//initialized = true;
 		}
-		//@qxc62 delete the code since CNN-DSO do not use it
-		//else if(coarseInitializer->trackFrame(fh, outputWrapper))	// if SNAPPED
-		//{
+		else if(coarseInitializer->trackFrame(fh, outputWrapper))	// if SNAPPED
+		{
 
-		//	initializeFromInitializer(fh);
-		//	lock.unlock();
-		//	deliverTrackedFrame(fh, true);
-		//}
-		//else
-		//{
-		//	// if still initializing
-		//	fh->shell->poseValid = false;
-		//	delete fh;
-		//}
+			initializeFromInitializer(fh);
+			lock.unlock();
+			deliverTrackedFrame(fh, true);
+		}
+		else
+		{
+			// if still initializing
+			fh->shell->poseValid = false;
+			delete fh;
+		}
 		return;
 	}
 	else	// do front-end operation.
@@ -1403,7 +1402,7 @@ void FullSystem::initializeFromInitializerCNN(FrameHessian* newFrame)
 	float* depthmap_ptr = (float*) newFrame->dDepth->data();
 	//@qxc62 transfer the depth value from 0-255 to real depth in (mm?)
 	for (int i = 0; i < wG[0] * hG[0]; ++i) {
-		depthmap_ptr[i] = (depthmap_ptr[i] / 255) * 17.95 * 5.625 + 0.0001;
+		depthmap_ptr[i] = (depthmap_ptr[i] / 255) * 17.95 * 5.625 + 3;
 	}
 
 	for (int i = 0; i < coarseInitializer->numPoints[0]; i++)
@@ -1473,7 +1472,7 @@ void FullSystem::makeNewTraces(FrameHessian* newFrame, float* gtDepth)
 	float* depthmap_ptr = (float*) newFrame->dDepth->data();
 	//@qxc62 transfer the depth value from 0-255 to real depth in (mm?)
 	for (int i = 0; i < wG[0] * hG[0]; ++i) {
-		depthmap_ptr[i] = (depthmap_ptr[i] / 255) * 17.95 * 5.625 + 0.0001;
+		depthmap_ptr[i] = (depthmap_ptr[i] / 255) * 17.95 * 5.625 + 3;
 	}
 
 	for (int y = patternPadding + 1; y < hG[0] - patternPadding - 2; y++)

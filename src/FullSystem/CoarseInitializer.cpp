@@ -101,6 +101,8 @@ bool CoarseInitializer::trackFrame(FrameHessian* newFrameHessian, std::vector<IO
 	if(!snapped)
 	{
 		thisToNext.translation().setZero();
+		//qxc62 debug info
+		std::cout << "reset camToWorld info" << std::endl;
 		for(int lvl=0;lvl<pyrLevelsUsed;lvl++)
 		{
 			int npts = numPoints[lvl];
@@ -799,8 +801,11 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
 		float* depthmap_ptr = newFrameHessian->dDepth->data();
 
 		//@qxc62 transfer the depth value from 0-255 to real depth in (mm?)
+		//std::cout << "depth values are: " << std::endl;
 		for (int i = 0; i < w[0] * h[0]; ++i) {
-			depthmap_ptr[i] = (depthmap_ptr[i] / 255) * 17.95 * 5.625 + 0.0001;
+			//@qxc62 debug info
+			//std::cout << depthmap_ptr[i] << std::endl;
+			depthmap_ptr[i] = (depthmap_ptr[i] / 255) * 17.95 * 5.625 + 3;
 		}
 		// set idepth map by static stereo matching. if no idepth is available, set 0.01.
 		int wl = w[lvl], hl = h[lvl];
@@ -884,6 +889,8 @@ void CoarseInitializer::setFirst(	CalibHessian* HCalib, FrameHessian* newFrameHe
 
 
 		numPoints[lvl]=nl;
+		//@qxc62 debug info
+		//std::cout << "number of points selected: " << nl << std::endl;
 	}
 	delete[] statusMap;
 	delete[] statusMapB;
